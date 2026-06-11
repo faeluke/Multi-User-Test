@@ -1,6 +1,97 @@
-yaml# Test conditions for efficiency sweep
-voltage_in: 12.0  # Input voltage in Volts
-load_currents: [0.5, 1.0, 2.0, 5.0, 10.0]  # Amps to sweep
+# Test Bench for Xiaoyu
 
-# Pass/Fail Criteria
-min_efficiency_percent: 85.0
+# Main source
+Bench_Owner: Xioyu
+Instruments:
+  Main_Source:
+    Device: BK_MR50040 # Just a comment
+    Addr: "ASRL5::INSTR"
+    Max_Voltage: 60
+    Channels: 1
+
+# Aux source
+  Aux_Source: 
+    Device: HMP4040 # Just a comment
+    Addr: "ASRL6::INSTR"
+    Channel1: 
+      Max_Voltage: 25
+    Channel2: 
+      Max_Voltage: 25      
+    Channel3: 
+      Max_Voltage: 5
+
+# Loads (Agregate loads have not been considered)
+  Load:
+    Device: Chroma_632XXX
+    Addr: 'USB0::0x0A69::0x0879::63206AM00742::INSTR'
+
+#Oscilloscope
+  O_Scope:
+    Device: Tekronix_MSO4
+    Addr: 'USB0::0x0699::0x0527::B026343::0::INSTR'
+    Channels: 4
+
+  Data_Aquisition:
+    Device: DAQ970A
+    Addr: 'USB0::0x2A8D::0x5101::MY58050657::INSTR'
+    Channels: 8
+  
+Measure_Methodology: Multiple_Devices
+Measure_Methodology: DAQ
+
+
+
+VIN_Measurement:
+  Methodology: DAQ
+  Channel: 101
+  Method: Direct
+
+IIN_Measurement:
+  Methodology: DAQ
+  Channel: 102
+  Method: Shunt
+  Value: 0.5
+
+VOUT_Measurement:
+  Methodology: DAQ
+  Channel: 103
+  Method: Direct
+
+I_IN_Measurement:
+  Methodology: DAQ
+  Channel: 104
+  Method: Shunt
+  Value: 0.125
+
+Vdrv_Measurement:
+  Methodology: source
+  Method: Aux
+
+Idrv_Measurement:
+  Methodology: source
+  Method: Aux
+
+Ictrl_Measurement:
+  Methodology: source
+  Method: Aux
+
+Ictrl_Measurement:
+  Methodology: source
+  Method: Aux
+
+
+
+
+
+#source_addr = 'ASRL5::INSTR'
+#load_addr = 'USB0::0x0A69::0x0879::63206AM00742::INSTR'
+#aux_addr = 'ASRL6::INSTR'
+#dap_addr = 'USB0::0x2A8D::0x5101::MY58050657::INSTR'
+#scope_addr = 'USB0::0x0699::0x0527::B026343::0::INSTR'
+
+#Create Device List
+#source = BK_MR50040_power_supply.BK_MR50040(source_addr)
+#load = Chroma_63206A_load.Chroma_63206A(load_addr)
+#aux = RS_HMP4040_power_supply.RS_HMP4040(aux_addr)
+#daq = Keysight_DAQ970A_datalogger.DAQ970A(dap_addr)
+#scope = Tekronix_MSO44.MSO44(scope_addr)

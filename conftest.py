@@ -1,40 +1,49 @@
-python import pytest
+import os
+import pytest
 import yaml
+import pyvisa
+from drivers.chroma import ChromaPSU
+from drivers.hp import HPPSU
 
-# 1. Load test parameters from configuration
-with open("Test.yaml", "r") as f:
-    config = yaml.safe_load(f)
-
-# Mock instrument class representing your PyVISA hardware control
-class PowerSupplyTester:
-    def set_input_voltage(self, voltage): pass
-    def set_load_current(self, current): pass
-    def measure_input_power(self): return 12.0 * 1.1 # Dummy P_in
-    def measure_output_power(self, target_current): return 12.0 * target_current # Dummy P_out
-
-# 2. Setup hardware fixture (runs once per test session)
 @pytest.fixture(scope="session")
-def hardware():
-    tester = PowerSupplyTester()
-    # Initialize instruments (e.g., rm.open_resource() via PyVISA)
-    tester.set_input_voltage(config["voltage_in"])
-    yield tester
-    # Teardown: Turn off outputs safely when done
-    tester.set_load_current(0)
+def bench_config():
+    """Automatically finds and parses the local bench_config.yaml file."""
+    config_filename = "bench_config.yaml"
+    
+    # Verify the file actually exists before trying to read it
+    if not os.path.exists(config_filename):
+        raise FileNotFoundError(
+            f"Missing required configuration file: '{config_filename}' in the root directory. "
+            f"Please create one based on your local bench hardware setup."
+        )
+        
+    with open(config_filename, "r") as f:
+        return yaml.safe_load(f)
 
-# 3. Parametrization expands this into 5 distinct test runs
-@pytest.mark.parametrize("load_current", config["load_currents"])
-def test_power_supply_efficiency(hardware, load_current):
-    # Apply load parameter
-    hardware.set_load_current(load_current)
+@pytest.fixture(scope="session")
+def psu(bench_config):
+    """Dynamically initializes the PSU based on the local YAML file layout."""
+    psu_config = bench_config["instruments"]["power_supply"]
+    brand = psu_config["brand"].lower()
+    address = psu_config["address"]
     
-    # Read instrument data
-    p_in = hardware.measure_input_power()
-    p_out = hardware.measure_output_power(load_current)
+    # Connect to the VISA subsystem
+    rm = pyvisa.ResourceManager()
+    resource = rm.open_resource(address)
     
-    # Calculate efficiency
-    efficiency = (p_out / p_in) * 100
+    # Factory selection based on file contents
+    if brand == "chroma":
+        driver = ChromaPSU(resource, psu_config)
+    elif brand == "hp":
+        driver = HPPSU(resource, psu_config)
+    else:
+        resource.close()
+        raise ValueError(f"Unsupported PSU brand found in your local YAML: {brand}")
+        
+    yield driver
     
-    # Assert result against limits
-    assert efficiency >= config["min_efficiency_percent"], \
-        f"Failed at {load_current}A: Efficiency was {efficiency:.2f}%"
+    # Tear down hardware connection safely when testing concludes
+    try:
+        driver.enable_output(False)
+    finally:
+        resource.close()
