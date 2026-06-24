@@ -1,49 +1,72 @@
-import os
+
 import pytest
 import yaml
-import pyvisa
-from drivers.chroma import ChromaPSU
-from drivers.hp import HPPSU
+from itertools import product
+from BenchSetup import IntrumentFactory
+from MeasurementOptions import InstrumentBench
+
+
+test_bench_config ="LukeBench.yaml"
+#setup the output XLS File
+
 
 @pytest.fixture(scope="session")
-def bench_config():
-    """Automatically finds and parses the local bench_config.yaml file."""
-    config_filename = "bench_config.yaml"
-    
-    # Verify the file actually exists before trying to read it
-    if not os.path.exists(config_filename):
-        raise FileNotFoundError(
-            f"Missing required configuration file: '{config_filename}' in the root directory. "
-            f"Please create one based on your local bench hardware setup."
-        )
+def bench():
+    """
+    Builds the entire bench architecture up front and ensures a safe teardown.
+    """
+    with open("bench_setup.yaml", "r") as f:
+        setup_data = yaml.safe_load(f)
         
-    with open(config_filename, "r") as f:
-        return yaml.safe_load(f)
+    inst_configs = setup_data["Instruments"]
+    setup_configs = setup_data["measurement_setup"]
+    strategy = setup_data["measurement_strategy"]
+    
+    # Construct base stimulus instruments
+    live_input_src = IntrumentFactory.create_instrument(inst_configs["Main_Source"])
+    live_driver_src = IntrumentFactory.create_instrument(inst_configs["Aux_Source"])
+    live_load = IntrumentFactory.create_instrument(inst_configs["Load"])
+    live_ctrl_src = IntrumentFactory.create_instrument(inst_configs["Aux_Source"])
 
-@pytest.fixture(scope="session")
-def psu(bench_config):
-    """Dynamically initializes the PSU based on the local YAML file layout."""
-    psu_config = bench_config["instruments"]["power_supply"]
-    brand = psu_config["brand"].lower()
-    address = psu_config["address"]
     
-    # Connect to the VISA subsystem
-    rm = pyvisa.ResourceManager()
-    resource = rm.open_resource(address)
+    # Symmetrically construct chosen engine tracking shunts
+    measurement_engine = IntrumentFactory.build_measurement_engine(strategy=strategy, inst_configs=inst_configs, setup_configs=setup_configs)
     
-    # Factory selection based on file contents
-    if brand == "chroma":
-        driver = ChromaPSU(resource, psu_config)
-    elif brand == "hp":
-        driver = HPPSU(resource, psu_config)
-    else:
-        resource.close()
-        raise ValueError(f"Unsupported PSU brand found in your local YAML: {brand}")
+    active_bench = InstrumentBench(
+        input_source=live_input_src,
+        driver_source=live_driver_src,
+        system_load=live_load,
+        aux_source = live_ctrl_src,
+        measurement_system=measurement_engine
         
-    yield driver
+    )
     
-    # Tear down hardware connection safely when testing concludes
-    try:
-        driver.enable_output(False)
-    finally:
-        resource.close()
+    yield active_bench
+    active_bench.emergency_shutdown()
+
+
+
+# Pytest hook to dynamically generate parameters for tests
+
+def pytest_generate_tests(metafunc):
+    """Dynamic Cartesian matrix expansion routine parsed straight from config.yaml."""
+    required_params = ["input_voltage", "driver_voltage", "output_current"]
+    if all(param in metafunc.fixturenames for param in required_params):
+        
+        with open("config.yaml", "r") as f:
+            config = yaml.safe_load(f)
+        
+        sweep = config["test_sweeps"]["efficiency_matrix"]
+        
+        combinations = list(product(
+            sweep["input_voltages"],
+            sweep["driver_voltages"],
+            sweep["output_currents"]
+        ))
+        
+        ids = [f"Vin={v_in}V,Vdrv={v_dr}V,Iout={i_out}A" for v_in, v_dr, i_out in combinations]
+        metafunc.parametrize("input_voltage, driver_voltage, output_current", combinations, ids=ids)
+
+
+
+
