@@ -14,10 +14,10 @@ class QuadDmmMeasurementSystem(BaseMeasurementSystem):
 
     def read_power_data(self) -> Dict[str, float]:
         # Triggers sequential or concurrent readings across 4 standalone meters
-        v_in = self.dmm_vin.read_voltage()
-        v_iin_shunt = self.dmm_iin.read_voltage()
-        v_out = self.dmm_vout.read_voltage()
-        v_iout_shunt = self.dmm_iout.read_voltage()
+        v_in = self.dmm_vin.measure_dc_voltage()
+        v_iin_shunt = self.dmm_iin.measure_dc_voltage()
+        v_out = self.dmm_vout.measure_dc_voltage()
+        v_iout_shunt = self.dmm_iout.measure_dc_voltage()
         
         return {
             "vin": float(v_in),
@@ -61,9 +61,10 @@ class InstrumentBench:
     def emergency_shutdown(self):
         """Safe teardown execution loop."""
         try:
-            self.system_load.set_current(0.0)
-            self.input_source.enable_output(False)
-            self.driver_source.enable_output(False)
+            self.system_load.Set_Load_Inactive()
+            self.input_source.set_voltage_and_current(0,0)
+            self.driver_source.disable_output()
+
         except Exception as e:
             print(f"\nCRITICAL: Teardown routine failed to trip safe states! {e}")
  

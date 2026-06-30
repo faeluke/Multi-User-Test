@@ -1,5 +1,6 @@
 
 import yaml
+import time
 
 # Acquire static values once during initial test parsing
 with open("config.yaml", "r") as f:
@@ -12,14 +13,14 @@ def test_run_efficiency_sweep(bench, input_voltage, driver_voltage, output_curre
     from hardware changes or matrix modifications.
     """
     # 1. Drive target stimulus profile parameters
-    bench.driver_source.set_voltage(driver_voltage)
-    bench.input_source.set_voltage(input_voltage)
-    bench.system_load.set_current(output_current)
-    
+    bench.driver_source.set_voltage2(driver_voltage,1)
+    bench.input_source.set_voltage_and_current(input_voltage,output_current *5)
+    bench.system_load.Set_Static_Current_L1(output_current)
+    time.sleep(10)
+
     # 2. Grab unified readings tracking physical shunt math seamlessly
     metrics = bench.meters.read_power_data()
 
- 
     # 3. Process Power Metrics
     power_in = metrics["vin"] * metrics["iin"]
     power_out = metrics["vout"] * metrics["iout"]

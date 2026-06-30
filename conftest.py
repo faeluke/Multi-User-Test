@@ -15,7 +15,7 @@ def bench():
     """
     Builds the entire bench architecture up front and ensures a safe teardown.
     """
-    with open("bench_setup.yaml", "r") as f:
+    with open(test_bench_config, "r") as f:
         setup_data = yaml.safe_load(f)
         
     inst_configs = setup_data["Instruments"]
@@ -26,8 +26,8 @@ def bench():
     live_input_src = IntrumentFactory.create_instrument(inst_configs["Main_Source"])
     live_driver_src = IntrumentFactory.create_instrument(inst_configs["Aux_Source"])
     live_load = IntrumentFactory.create_instrument(inst_configs["Load"])
-    live_ctrl_src = IntrumentFactory.create_instrument(inst_configs["Aux_Source"])
-
+    #live_ctrl_src = IntrumentFactory.create_instrument(inst_configs["Aux_Source"])
+    live_ctrl_src=live_driver_src
     
     # Symmetrically construct chosen engine tracking shunts
     measurement_engine = IntrumentFactory.build_measurement_engine(strategy=strategy, inst_configs=inst_configs, setup_configs=setup_configs)
@@ -40,6 +40,18 @@ def bench():
         measurement_system=measurement_engine
         
     )
+
+    #Turn it all On
+    live_input_src.set_voltage_and_current(48,5)
+    
+    live_ctrl_src.set_voltage1(3.3,1)
+    live_driver_src.set_voltage2(12,1)
+    live_ctrl_src.enable_output()
+
+
+    live_load.Set_Static_Current_L1(0.1)
+    live_load.Set_Channel_Active('ON')
+    live_load.Set_Load_Active()
     
     yield active_bench
     active_bench.emergency_shutdown()
@@ -59,9 +71,9 @@ def pytest_generate_tests(metafunc):
         sweep = config["test_sweeps"]["efficiency_matrix"]
         
         combinations = list(product(
-            sweep["input_voltages"],
-            sweep["driver_voltages"],
-            sweep["output_currents"]
+            sweep["v_in"],
+            sweep["v_drv"],
+            sweep["i_out"]
         ))
         
         ids = [f"Vin={v_in}V,Vdrv={v_dr}V,Iout={i_out}A" for v_in, v_dr, i_out in combinations]
@@ -70,3 +82,4 @@ def pytest_generate_tests(metafunc):
 
 
 
+ 

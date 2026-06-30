@@ -6,7 +6,7 @@ measurement_strategy: "quad_dmm"
 
 Instruments:
   Main_Source:
-    Module_Name: drivers.HP6032x_driver
+    Module_Name: drivers.HP6032Ax_driver
     Device: HP6032 # Just a comment
     Addr: "GPIB0::5::INSTR"
     Max_Voltage: 60
@@ -15,56 +15,34 @@ Instruments:
 # Aux source
   Aux_Source:
     Module_Name: drivers.N8394X_driver
-    Device: E363x # Just a comment
+    Device: E3631 # Just a comment
     Addr: "GPIB0::10::INSTR"
-    Channel1: 
-      Max_Voltage: 6
-    Channel2: 
-      Max_Voltage: 25      
-    Channel3: 
-      Max_Voltage: 25
 
-  # Loads (Agregate loads have not been considered)
-  Load:
+  Load:  # Loads (Agregate loads have not been considered)
     Module_Name: drivers.Chroma_driver
     Device: C63200
     Addr: 'GPIB0::8::INSTR'
 
-  # Oscilloscope (Not configured yet)
-  #O_Scope:
-  #  Module_Name: 
-  #  Device: Tekronix_MSO5
-  #  Addr: 'USB0::'
-  #  Channels: 4
-
-  #Data_Aquisition:
-  #  Module_Name: 
-  #  Device: DAQ970A
-  #  Addr: 'USB0::0x2A8D::0x5101::MY58050657::INSTR'
-  #  Channels: 8
-
   Meter1:
-    Module_Name: drivers.ag_344_driver
+    Module_Name: drivers.ag344_driver
     Device: AG34401
-    Addr: '"GPIB0::11::INSTR"
+    Addr: 'GPIB0::11::INSTR'
 
   Meter2:
-    Module_Name: drivers.ag_344_driver
+    Module_Name: drivers.ag344_driver
     Device: AG34401
-    Addr: '"GPIB0::12::INSTR"'
+    Addr: 'GPIB0::12::INSTR'
 
   Meter3:
-    Module_Name: drivers.ag_344_driver
+    Module_Name: drivers.ag344_driver
     Device: AG34401
-    Addr: '"GPIB0::13::INSTR"'
+    Addr: 'GPIB0::13::INSTR'
 
   Meter4:
-    Module_Name: drivers.ag_344_driver
+    Module_Name: drivers.ag344_driver
     Device: AG34401
-    Addr: '"GPIB0::14::INSTR"'
+    Addr: 'GPIB0::14::INSTR'
 
-
-  
 measurement_strategy: quad_dmm
 #measurement_strategy: DAQ
 
@@ -81,66 +59,10 @@ measurement_setup:
   
   quad_dmm:
     mapping:
-      vin: "dmm_vin"
-      iin: "dmm_iin"
-      vout: "dmm_vout"
-      iout: "dmm_iout"
+      vin: Meter1
+      iin: Meter2
+      vout: Meter3
+      iout: Meter4
     shunts:
       iin_ohms: 0.0004991
       iout_ohms: 0.00100059
-
-
-VIN_Measurement:
-  Methodology: Meter1
-  Channel: 1
-  Method: Direct
-
-IIN_Measurement:
-  Methodology: Meter2
-  Channel: 1
-  Method: Shunt
-  Value: 0.00100059
-
-VOUT_Measurement:
-  Methodology: Meter3
-  Channel: 1
-  Method: Direct
-
-I_IN_Measurement:
-  Methodology: Meter4
-  Channel: 1
-  Method: Shunt
-  Value: 0.0004991
-
-Vdrv_Measurement:
-  Methodology: source
-  Method: Aux
-
-Idrv_Measurement:
-  Methodology: source
-  Method: Aux
-
-Ictrl_Measurement:
-  Methodology: source
-  Method: Aux
-
-Ictrl_Measurement:
-  Methodology: source
-  Method: Aux
-
-
-
-
-
-#source_addr = 'ASRL5::INSTR'
-#load_addr = 'USB0::0x0A69::0x0879::63206AM00742::INSTR'
-#aux_addr = 'ASRL6::INSTR'
-#dap_addr = 'USB0::0x2A8D::0x5101::MY58050657::INSTR'
-#scope_addr = 'USB0::0x0699::0x0527::B026343::0::INSTR'
-
-#Create Device List
-#source = BK_MR50040_power_supply.BK_MR50040(source_addr)
-#load = Chroma_63206A_load.Chroma_63206A(load_addr)
-#aux = RS_HMP4040_power_supply.RS_HMP4040(aux_addr)
-#daq = Keysight_DAQ970A_datalogger.DAQ970A(dap_addr)
-#scope = Tekronix_MSO44.MSO44(scope_addr)

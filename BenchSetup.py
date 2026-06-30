@@ -42,23 +42,24 @@ class IntrumentFactory:
 
 
         driver_path =config["Module_Name"]
-        resource_id = config["Module"]
+        class_name = config["Device"]
+        resource_id = config["Addr"]
         #safeties = config.get("safeties",{}) # not implemented
-
-        module_name,class_name =driver_path.rsplit(".",1)
         
                             
         try:
-            module = importlib.import_module(module_name)
+            module = importlib.import_module(driver_path)
 
             driver_class = getattr(module,class_name)
 
         except ModuleNotFoundError:
-            raise ImportError(f"Could not find driver file: '{module_name}.py'")
+            raise ImportError(f"Could not find driver file: '{driver_path}.py'")
         except AttributeError:
-            raise AttributeError(f"Class '{class_name}' not found inside '{module_name}.py'")
+            raise AttributeError(f"Class '{class_name}' not found inside '{driver_path}.py'")
 
-        return driver_class(resource_id = resource_id)
+        print (resource_id,"resource id")
+
+        return driver_class(resource_id)
 
     
     @classmethod
